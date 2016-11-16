@@ -17,17 +17,15 @@ public class ClientServer extends SwingWorker<List, List> {
     Socket socketClient;
     ServerSocket socketClientServer;
     String IP;
+    String username;
     int port;
     private List<String> conversation = new ArrayList<String>();
 
-    public ClientServer(String IP, int port) throws IOException {
+    public ClientServer(String username, String IP, int port) throws IOException {
         this.IP = IP;
+        this.username = username;
         this.port = port;
-        ClientServer(this.port);
-    }
-
-    public void ClientServer(int port) throws IOException {
-        socketClientServer = new ServerSocket(port);
+        socketClientServer = new ServerSocket(this.port);
         System.out.println("Server: " + Inet4Address.getLocalHost().getHostAddress() + ":" + socketClientServer.getLocalPort());
     }
 
@@ -36,8 +34,8 @@ public class ClientServer extends SwingWorker<List, List> {
         Socket socket = new Socket(IP, port);
         out = new PrintStream(socket.getOutputStream());
         out.println(message);
-        System.out.println("To: " + IP + ":" + port + ". Message: " + message);
-        conversation.add("To: " + IP + ":" + port + ". Message: " + message);
+        //System.out.println("To: " + IP + ":" + port + ". Message: " + message);
+        conversation.add(message);
         out.close();
     }
 
@@ -53,8 +51,8 @@ public class ClientServer extends SwingWorker<List, List> {
                 //ler a mensagem
                 String message = in.nextLine();
 
-                System.out.println("Received Message: " + message);
-                conversation.add("Received Message: " + message);
+                //System.out.println("Received Message: " + message);
+                conversation.add(message);
 
                 //fechar o socket
                 socket.close();
