@@ -13,6 +13,9 @@ import java.util.logging.Logger;
 public class AuthServer implements Runnable {
 
     ServerSocket listener;
+    /**
+     * TODO - O hashmap tem de ser concorrente Copyonwrite
+     */
     HashMap<String, ArrayList<String>> users;
     ObjectOutputStream out;
     ObjectInputStream in;
@@ -26,12 +29,12 @@ public class AuthServer implements Runnable {
         }
     }
 
-    public void register(String username, String hash, Socket socket) {
+    public void register(String username, String hash, Socket socket, int port) {
         if (!users.containsKey(username)) {
             ArrayList<String> aux = new ArrayList<>();
             aux.add(hash);
             aux.add(socket.getInetAddress().toString());
-            aux.add(socket.getPort() + "");
+            aux.add(port + "");
             users.put(username, aux);
         } else {
             try {
@@ -55,26 +58,25 @@ public class AuthServer implements Runnable {
             try {
                 Socket socket = listener.accept();
                 System.out.println("connection done");
+                in = new ObjectInputStream(socket.getInputStream());
                 String readObj = (String) in.readObject();
-                //username,hash
                 String[] fields = readObj.split(",");
-                String username = fields[0];
-                String hashPass = fields[1];
+                String username = fields[1];
+                String hashPass = fields[2];
+                int port = Integer.parseInt(fields[3]);
                 if (readObj.startsWith("register")) {
-                    register(username, hashPass, socket);
+                    register(username, hashPass, socket, port);
+                    System.out.println(users.toString());
                 } else if (readObj.startsWith("login")) {
                     if (users.get(username).get(0) == hashPass) {
-                        out.writeObject("Login Succesful");
+                        System.out.println("Login done");
                     } else {
-                        out.writeObject("Sorry. We cant verify your login");
+                        System.out.println("User already exists");
                     }
                 }
-            } catch (IOException ex) {
-                Logger.getLogger(AuthServer.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (ClassNotFoundException ex) {
-                Logger.getLogger(AuthServer.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException | ClassNotFoundException ex) {
+                System.out.println(ex.getMessage());
             }
         }
     }
-
 }
