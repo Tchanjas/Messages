@@ -40,6 +40,7 @@ public class UI extends javax.swing.JFrame {
         timer.start();
         this.setTitle("logged in as: " + username);
         this.username = username;
+        this.setLocationRelativeTo(null);
     }
 
     /**

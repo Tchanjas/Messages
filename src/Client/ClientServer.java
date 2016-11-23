@@ -1,13 +1,13 @@
 package Client;
 
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker;
@@ -20,6 +20,8 @@ public class ClientServer extends SwingWorker<List, List> {
     String username;
     int port;
     private List<String> conversation = new ArrayList<String>();
+    ObjectOutputStream out;
+    ObjectInputStream in;
 
     public ClientServer(String username, String IP, int port) throws IOException {
         this.IP = IP;
@@ -30,13 +32,12 @@ public class ClientServer extends SwingWorker<List, List> {
     }
 
     public void send(String message, String IP, int port) throws IOException {
-        PrintStream out;
         Socket socket = new Socket(IP, port);
-        out = new PrintStream(socket.getOutputStream());
-        out.println(message);
+        out = new ObjectOutputStream(socket.getOutputStream());
+        out.writeObject(message);
         //System.out.println("To: " + IP + ":" + port + ". Message: " + message);
         conversation.add(message);
-        out.close();
+        //out.close();
     }
 
     @Override
@@ -46,18 +47,17 @@ public class ClientServer extends SwingWorker<List, List> {
                 //esperar pela ligacao  (instrucao bloqueante)
                 Socket socket = socketClientServer.accept();
                 //abertura da stream de entrada - Stream de texto
-                Scanner in = new Scanner(socket.getInputStream());
+                in = new ObjectInputStream(socket.getInputStream());
 
                 //ler a mensagem
-                String message = in.nextLine();
-
-                //System.out.println("Received Message: " + message);
+                String message = (String)in.readObject();
+                System.out.println("Received Message: " + message);
                 conversation.add(message);
 
                 //fechar o socket
-                socket.close();
+                //socket.close();
                 //fechar as streams
-                in.close();
+                //in.close();
             } // esperar por novos clientes
             catch (IOException ex) {
                 Logger.getLogger(ClientServer.class.getName()).log(Level.SEVERE, null, ex);
