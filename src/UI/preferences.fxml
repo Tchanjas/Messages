@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="UI.PreferencesController">
+   <children>
+      <Button fx:id="btSave" layoutX="545.0" layoutY="361.0" mnemonicParsing="false" onAction="#saveAction" text="Save" />
+      <Label layoutX="35.0" layoutY="37.0" text="Client Port" />
+      <Label layoutX="35.0" layoutY="65.0" text="Server" />
+      <Label layoutX="69.0" layoutY="90.0" text="IP" />
+      <Label layoutX="68.0" layoutY="124.0" text="Port" />
+      <TextField fx:id="txtClientPort" layoutX="108.0" layoutY="33.0" />
+      <TextField fx:id="txtServerIP" layoutX="108.0" layoutY="86.0" />
+      <TextField fx:id="txtServerPort" layoutX="108.0" layoutY="120.0" />
+      <Button fx:id="btBack" layoutX="15.0" layoutY="361.0" mnemonicParsing="false" onAction="#backAction" text="Back" />
+   </children>
+</AnchorPane>
