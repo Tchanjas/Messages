@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.MenuBar;
+import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
@@ -26,6 +27,7 @@ public class UI extends Application {
         stage.setScene(scene);
         stage.setTitle("Messages");
         stage.setResizable(false);
+        stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
         stage.show();
     }
 

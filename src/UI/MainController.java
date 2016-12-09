@@ -82,6 +82,7 @@ public class MainController implements Initializable {
     private void connectAction(ActionEvent event) {
         try {
             client = new ClientServer(username, "localhost", 10010);
+            //client = new ClientServer(username, "localhost", Integer.parseInt(clientPort));
             new Thread(client).start();
         } catch (IOException ex) {
             Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);

@@ -16,8 +16,10 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
 
 public class SignupController implements Initializable {
 
@@ -83,8 +85,10 @@ public class SignupController implements Initializable {
                 alert.setTitle("Registration Successful");
                 alert.setHeaderText("Sign up successfully");
                 alert.setContentText("Sign up successfully");
+                Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+                stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
                 alert.showAndWait();
-
+                
                 AnchorPane login = FXMLLoader.load(getClass().getResource("login.fxml"));
                 BorderPane border = UI.getRoot();
                 border.setCenter(login);
@@ -93,6 +97,8 @@ public class SignupController implements Initializable {
                 alert.setTitle("Authentication Error");
                 alert.setHeaderText("Authentication Error!");
                 alert.setContentText("Something went wrong. \n Verify if your credentials are correct.");
+                Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+                stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
                 alert.showAndWait();
             }
             out.close();

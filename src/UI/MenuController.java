@@ -9,6 +9,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
@@ -44,6 +45,7 @@ public class MenuController implements Initializable {
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("About");
             stage.setResizable(false);
+            stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
             stage.setScene(new Scene(about));
             stage.show();
     }
