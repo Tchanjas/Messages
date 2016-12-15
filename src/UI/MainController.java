@@ -35,8 +35,6 @@ public class MainController implements Initializable {
     @FXML
     private TextField txtIP;
     @FXML
-    private Button btConnect;
-    @FXML
     private Button btSend;
 
     Client client;
