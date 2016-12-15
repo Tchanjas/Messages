@@ -1,6 +1,6 @@
 package UI;
 
-import Client.ClientServer;
+import Client.Client;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -39,7 +39,7 @@ public class MainController implements Initializable {
     @FXML
     private Button btSend;
 
-    ClientServer client;
+    Client client;
     static String username;
     DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
     Date date;
@@ -72,31 +72,41 @@ public class MainController implements Initializable {
         if (configProperties != null) {
             clientPort = configProperties.getProperty("clientPort");
         }
+        
+        
+        /*
+         * ===============================
+         * TEMPORARY WAY FOR LOCAL TESTING (it will give us 10010 first and 10011 second)
+         * ===============================
+         */
+        int i = 10009;
+        boolean started = false;
+        do {
+            i++;
+            try {
+                client = new Client(username, "localhost", i);
+                started = true;
+            } catch (Exception ex) {
+                Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } while (started == false);
+        System.out.println(i);
+        /* ===============================*/
 
+        
         Timeline timeline = new Timeline(new KeyFrame(Duration.millis(250), getConv -> getConversation()));
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
     }
 
     @FXML
-    private void connectAction(ActionEvent event) {
-        try {
-            client = new ClientServer(username, "localhost", 10010);
-            //client = new ClientServer(username, "localhost", Integer.parseInt(clientPort));
-            new Thread(client).start();
-        } catch (IOException ex) {
-            Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    @FXML
     private void sendAction(ActionEvent event) {
         try {
             date = new Date();
-            client.send(dateFormat.format(date) + " - " + username + ":" + tempTextArea.getText(),
+            client.sendMessage(dateFormat.format(date) + " - " + username + ":" + tempTextArea.getText(),
                     txtIP.getText(), Integer.parseInt(txtPort.getText()));
             tempTextArea.setText("");
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

@@ -1,11 +1,13 @@
 package UI;
 
+import Server.ServerInterface;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.net.URL;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -33,8 +35,6 @@ public class LoginController implements Initializable {
     @FXML
     private PasswordField pfPass;
 
-    ObjectOutputStream out;
-    ObjectInputStream in;
     Properties configProperties = null;
     String serverIP = null;
     String serverPort = null;
@@ -68,13 +68,11 @@ public class LoginController implements Initializable {
     @FXML
     private void signinAction(ActionEvent event) {
         try {
-            Socket socket = new Socket(serverIP, Integer.parseInt(serverPort));
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
-            out.writeObject("authenticate," + txtUser.getText() + "," + String.valueOf(pfPass.getText()).hashCode());
-            out.flush();
-            String response = (String) in.readObject();
-            if (response.startsWith("3")) {
+            Registry registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
+            ServerInterface stub = (ServerInterface) registry.lookup("Server");
+            boolean response = stub.authenticate(txtUser.getText(), pfPass.getText());
+            
+            if (response == true) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Authentication Successful");
                 alert.setHeaderText("Sign in successfully");
@@ -89,7 +87,6 @@ public class LoginController implements Initializable {
                 BorderPane border = UI.getRoot();
                 border.setCenter(main);
             } else {
-                System.out.println(response.toString());
                 Alert alert = new Alert(AlertType.WARNING);
                 alert.setTitle("Authentication Error");
                 alert.setHeaderText("Authentication Error!");
@@ -98,8 +95,6 @@ public class LoginController implements Initializable {
                 stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
                 alert.showAndWait();
             }
-            out.close();
-            in.close();
         } catch (Exception ex) {
         }
     }

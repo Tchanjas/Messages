@@ -1,11 +1,14 @@
 package UI;
 
+import Server.ServerInterface;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -32,8 +35,6 @@ public class SignupController implements Initializable {
     @FXML
     private Button btSignup;
 
-    ObjectOutputStream out;
-    ObjectInputStream in;
     Properties configProperties = null;
     String serverIP = null;
     String serverPort = null;
@@ -74,13 +75,11 @@ public class SignupController implements Initializable {
     @FXML
     private void signupAction(ActionEvent event) {
         try {
-            Socket socket = new Socket(serverIP, Integer.parseInt(serverPort));
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
-            out.writeObject("register," + txtUser.getText() + "," + String.valueOf(pfPass.getText()).hashCode());
-            out.flush();
-            String response = (String) in.readObject();
-            if (response.startsWith("1")) {
+            Registry registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
+            ServerInterface stub = (ServerInterface) registry.lookup("Server");
+            boolean response = stub.register(txtUser.getText(), pfPass.getText());
+            
+            if (response == true) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Registration Successful");
                 alert.setHeaderText("Sign up successfully");
@@ -88,7 +87,7 @@ public class SignupController implements Initializable {
                 Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
                 stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
                 alert.showAndWait();
-                
+
                 AnchorPane login = FXMLLoader.load(getClass().getResource("login.fxml"));
                 BorderPane border = UI.getRoot();
                 border.setCenter(login);
@@ -101,8 +100,6 @@ public class SignupController implements Initializable {
                 stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
                 alert.showAndWait();
             }
-            out.close();
-            in.close();
         } catch (Exception ex) {
         }
     }
