@@ -3,11 +3,12 @@ package UI;
 import Server.ServerInterface;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.net.Inet4Address;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -38,6 +39,7 @@ public class LoginController implements Initializable {
     Properties configProperties = null;
     String serverIP = null;
     String serverPort = null;
+    String clientPort = null;
 
     /**
      * Initializes the controller class.
@@ -62,6 +64,7 @@ public class LoginController implements Initializable {
         if (configProperties != null) {
             serverIP = configProperties.getProperty("serverIP");
             serverPort = configProperties.getProperty("serverPort");
+            clientPort = configProperties.getProperty("clientPort");
         }
     }
 
@@ -70,7 +73,8 @@ public class LoginController implements Initializable {
         try {
             Registry registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
             ServerInterface stub = (ServerInterface) registry.lookup("Server");
-            boolean response = stub.authenticate(txtUser.getText(), pfPass.getText());
+            boolean response = stub.authenticate(txtUser.getText(), pfPass.getText(), 
+                    Inet4Address.getLocalHost().getHostAddress().toString(), clientPort);
             
             if (response == true) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
