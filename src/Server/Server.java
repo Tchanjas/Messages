@@ -43,7 +43,7 @@ public class Server implements ServerInterface {
      * This method will function aswell as a keepAlive for each client
      */
     @Override
-    public Object onlineFriends(String username) throws RemoteException {
+    public HashMap onlineFriends(String username) throws RemoteException {
         HashMap users = new HashMap();
         try {
             Class.forName(dbDriver).newInstance();

@@ -1,12 +1,18 @@
 package UI;
 
 import Client.Client;
+import Server.ServerInterface;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.AlreadyBoundException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -15,13 +21,17 @@ import java.util.logging.Logger;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
 
 public class MainController implements Initializable {
@@ -36,6 +46,8 @@ public class MainController implements Initializable {
     private TextField txtIP;
     @FXML
     private Button btSend;
+    @FXML
+    private ListView<String> list = new ListView<>();
 
     Client client;
     static String username;
@@ -45,6 +57,10 @@ public class MainController implements Initializable {
     Properties configProperties = null;
 
     String clientPort = null;
+    String serverIP = null;
+    String serverPort = null;
+    
+    HashMap friendsList = new HashMap();
 
     /**
      * Initializes the controller class.
@@ -69,32 +85,37 @@ public class MainController implements Initializable {
 
         if (configProperties != null) {
             clientPort = configProperties.getProperty("clientPort");
+            serverIP = configProperties.getProperty("serverIP");
+            serverPort = configProperties.getProperty("serverPort");
         }
-        
-        
-        /*
-         * ===============================
-         * TEMPORARY WAY FOR LOCAL TESTING (it will give us 10010 first and 10011 second)
-         * ===============================
-         */
-        int i = 10009;
-        boolean started = false;
-        do {
-            i++;
-            try {
-                client = new Client(username, "localhost", i);
-                started = true;
-            } catch (Exception ex) {
-                Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } while (started == false);
-        System.out.println(i);
-        /* ===============================*/
 
-        
+        try {
+            /*
+            * ===============================
+            * TEMPORARY WAY FOR LOCAL TESTING
+            * ===============================
+            */
+            client = new Client(username, "localhost", 10010);
+            /* ============================== */
+        } catch (Exception ex) {
+            Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         Timeline timeline = new Timeline(new KeyFrame(Duration.millis(250), getConv -> getConversation()));
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
+
+        // get friends and put them in the sidebar list
+        Registry registry;
+        try {
+            registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
+            ServerInterface stub = (ServerInterface) registry.lookup("Server");
+            friendsList = stub.onlineFriends(username);
+            ObservableList<String> items = FXCollections.observableArrayList(friendsList.keySet());
+            list.setItems(items);
+        } catch (Exception ex) {
+            Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @FXML
@@ -107,6 +128,12 @@ public class MainController implements Initializable {
         } catch (Exception ex) {
             Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    @FXML
+    private void listAction(MouseEvent event) {
+        String selected = list.getSelectionModel().getSelectedItem();
+        System.out.println(selected + " : " +  friendsList.get(selected));
     }
 
     private void getConversation() {
