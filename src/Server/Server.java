@@ -138,11 +138,9 @@ public class Server implements ServerInterface {
                     } else {
                         stmnt.execute("insert into APP.FRIENDS(IDUSER,IDFRIEND) values(" + idUser + "," + idFriend + ")");
                         stmnt.execute("insert into APP.FRIENDS(IDUSER,IDFRIEND) values(" + idFriend + "," + idUser + ")");
-                        System.out.println("inserted friend");
                         return true;
                     }
                 } else {
-                    System.out.println("no frienduser");
                     return false;
                 }
             }
