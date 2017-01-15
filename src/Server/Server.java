@@ -114,7 +114,7 @@ public class Server implements ServerInterface {
                     + "' and PASSWORD like '" + password + "'");
             if (existingUser.next()) {
                 result = true;
-                System.out.println("User " + username + " logged at " + new Date());
+                System.out.println("User " + username + " at " + ip + ":" + port + " logged at " + new Date());
                 onlineUsers.put(username, ip + ":" + port);
             } else {
                 result = false;
