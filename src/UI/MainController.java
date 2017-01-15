@@ -3,24 +3,25 @@ package UI;
 import Client.Client;
 import Server.ServerInterface;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.URL;
-import java.rmi.AlreadyBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -59,7 +60,10 @@ public class MainController implements Initializable {
     String clientPort = null;
     String serverIP = null;
     String serverPort = null;
-    
+
+    ServerInterface stub = null;
+
+    List<String> conversation = new ArrayList<String>();
     HashMap friendsList = new HashMap();
 
     /**
@@ -94,28 +98,46 @@ public class MainController implements Initializable {
             * ===============================
             * TEMPORARY WAY FOR LOCAL TESTING
             * ===============================
-            */
-            client = new Client(username, "localhost", 10010);
+             */
+            client = new Client(username, "localhost", 10011);
+            clientPort = "10011";
             /* ============================== */
         } catch (Exception ex) {
             Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(250), getConv -> getConversation()));
-        timeline.setCycleCount(Animation.INDEFINITE);
-        timeline.play();
-
-        // get friends and put them in the sidebar list
-        Registry registry;
         try {
-            registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
-            ServerInterface stub = (ServerInterface) registry.lookup("Server");
-            friendsList = stub.onlineFriends(username);
-            ObservableList<String> items = FXCollections.observableArrayList(friendsList.keySet());
-            list.setItems(items);
+            Registry registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
+            stub = (ServerInterface) registry.lookup("Server");
         } catch (Exception ex) {
             Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
         }
+
+        // get and set periodically the conversation
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                getConversation();
+                Platform.runLater(new Runnable() {
+                    public void run() {
+                        setConversation();
+                    }
+                });
+            }
+        }, 0, 250);
+        
+        // get and set periodically the friends list
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                getOnlineFriends();
+                Platform.runLater(new Runnable() {
+                    public void run() {
+                        setOnlineFriends();
+                    }
+                });
+            }
+        }, 0, 5000);
     }
 
     @FXML
@@ -133,19 +155,7 @@ public class MainController implements Initializable {
     @FXML
     private void listAction(MouseEvent event) {
         String selected = list.getSelectionModel().getSelectedItem();
-        System.out.println(selected + " : " +  friendsList.get(selected));
-    }
-
-    private void getConversation() {
-        try {
-            List<String> conv = client.getConversation();
-            for (String item : conv) {
-                tempLabel.setText(tempLabel.getText() + "\n" + item);
-            }
-            conv.clear();
-            client.setConversation(conv);
-        } catch (Exception e) {
-        }
+        System.out.println(selected + " : " + friendsList.get(selected));
     }
 
     public static String getUsername() {
@@ -154,5 +164,34 @@ public class MainController implements Initializable {
 
     public static void setUsername(String username) {
         MainController.username = username;
+    }
+
+    private void getConversation() {
+        if (!client.getConversation().isEmpty()) {
+            conversation.addAll(client.getConversation());
+            client.clearConversation();
+        }
+    }
+
+    private void setConversation() {
+        if (!conversation.isEmpty()) {
+            for (String item : conversation) {
+                tempLabel.setText(tempLabel.getText() + "\n" + item);
+            }
+            conversation.clear();
+        }
+    }
+
+    private void getOnlineFriends() {
+        try {
+            friendsList = stub.onlineFriends(username);
+        } catch (Exception ex) {
+            Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void setOnlineFriends() {
+        ObservableList<String> items = FXCollections.observableArrayList(friendsList.keySet());
+        list.setItems(items);
     }
 }

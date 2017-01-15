@@ -55,7 +55,7 @@ public class Client implements ClientInterface {
         return conversation;
     }
 
-    public void setConversation(List<String> conversation) {
-        this.conversation = conversation;
+    public void clearConversation() {
+        conversation.clear();
     }
 }
