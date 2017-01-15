@@ -5,7 +5,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.security.PublicKey;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -104,7 +103,7 @@ public class Server implements ServerInterface {
                     + "' and PASSWORD like '" + password + "'");
             if (existingUser.next()) {
                 result = true;
-                System.out.println("User " + username + " logged at " + new Date());
+                System.out.println("User " + username + " at " + ip + ":" + port + " logged at " + new Date());
                 onlineUsers.put(username, ip + ":" + port);
             } else {
                 result = false;

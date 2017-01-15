@@ -3,13 +3,10 @@ package UI;
 import Client.Client;
 import Server.ServerInterface;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -18,42 +15,24 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.TabPane;
 import javafx.scene.input.MouseEvent;
-import javafx.util.Duration;
 
 public class MainController implements Initializable {
 
     @FXML
-    private Label tempLabel;
-    @FXML
-    private TextArea tempTextArea;
-    @FXML
-    private TextField txtPort;
-    @FXML
-    private TextField txtIP;
-    @FXML
-    private Button btSend;
-    @FXML
     private ListView<String> list = new ListView<>();
+    @FXML
+    private TabPane tabPane;
 
-    Client client;
+    static Client client;
     static String username;
-    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-    Date date;
 
     Properties configProperties = null;
 
@@ -63,8 +42,9 @@ public class MainController implements Initializable {
 
     ServerInterface stub = null;
 
-    List<String> conversation = new ArrayList<String>();
     HashMap friendsList = new HashMap();
+    HashMap<String, List<String>> conversation = new HashMap<>();
+    static HashMap<String, TabConversation> tabs = new HashMap<>();
 
     /**
      * Initializes the controller class.
@@ -94,14 +74,7 @@ public class MainController implements Initializable {
         }
 
         try {
-            /*
-            * ===============================
-            * TEMPORARY WAY FOR LOCAL TESTING
-            * ===============================
-             */
-            client = new Client(username, "localhost", 10011);
-            clientPort = "10011";
-            /* ============================== */
+            client = new Client(username, "localhost", Integer.parseInt(clientPort));
         } catch (Exception ex) {
             Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -120,12 +93,16 @@ public class MainController implements Initializable {
                 getConversation();
                 Platform.runLater(new Runnable() {
                     public void run() {
-                        setConversation();
+                        try {
+                            setConversation();
+                        } catch (IOException ex) {
+                            Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     }
                 });
             }
         }, 0, 250);
-        
+
         // get and set periodically the friends list
         new Timer().schedule(new TimerTask() {
             @Override
@@ -141,21 +118,18 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    private void sendAction(ActionEvent event) {
-        try {
-            date = new Date();
-            client.sendMessage(dateFormat.format(date) + " - " + username + ":" + tempTextArea.getText(),
-                    txtIP.getText(), Integer.parseInt(txtPort.getText()));
-            tempTextArea.setText("");
-        } catch (Exception ex) {
-            Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+    private void listAction(MouseEvent event) throws IOException {
+        if (tabs.get(list.getSelectionModel().getSelectedItem()) == null) {
+            String selected = list.getSelectionModel().getSelectedItem();
 
-    @FXML
-    private void listAction(MouseEvent event) {
-        String selected = list.getSelectionModel().getSelectedItem();
-        System.out.println(selected + " : " + friendsList.get(selected));
+            TabConversation tab = new TabConversation(username, selected,
+                    friendsList.get(selected).toString().split(":")[0],
+                    Integer.parseInt(friendsList.get(selected).toString().split(":")[1]));
+            tab.setText(selected);
+
+            tabPane.getTabs().add(tab);
+            tabs.put(selected, tab);
+        }
     }
 
     public static String getUsername() {
@@ -167,16 +141,43 @@ public class MainController implements Initializable {
     }
 
     private void getConversation() {
-        if (!client.getConversation().isEmpty()) {
-            conversation.addAll(client.getConversation());
-            client.clearConversation();
+        if (client.getConversation() != null && !client.getConversation().isEmpty()) {
+            for (HashMap.Entry<String, List<String>> entry : client.getConversation().entrySet()) {
+                if (!entry.getValue().isEmpty()) {
+                    if (conversation.get(entry.getKey()) == null) {
+                        conversation.put(entry.getKey(), entry.getValue());
+                    } else {
+                        conversation.get(entry.getKey()).addAll(entry.getValue());
+                    }
+                }
+            }
         }
+        client.clearConversation();
     }
 
-    private void setConversation() {
+    private void setConversation() throws IOException {
         if (!conversation.isEmpty()) {
-            for (String item : conversation) {
-                tempLabel.setText(tempLabel.getText() + "\n" + item);
+            for (HashMap.Entry<String, List<String>> entry : conversation.entrySet()) {
+                if (tabs.get(entry.getKey()) == null) {
+                    String incomingUsername = entry.getKey();
+
+                    TabConversation tab = new TabConversation(username, incomingUsername,
+                            friendsList.get(incomingUsername).toString().split(":")[0],
+                            Integer.parseInt(friendsList.get(incomingUsername).toString().split(":")[1]));
+                    tab.setText(incomingUsername);
+
+                    tabPane.getTabs().add(tab);
+                    tabs.put(incomingUsername, tab);
+   
+                    for (String item : entry.getValue()) {
+                        tab.setLabelConversationText(tab.getLabelConversationText() + "\n" + item);
+                    }
+                } else {
+                    TabConversation tab = tabs.get(entry.getKey());
+                    for (String item : entry.getValue()) {
+                        tab.setLabelConversationText(tab.getLabelConversationText() + "\n" + item);
+                    }
+                }
             }
             conversation.clear();
         }
@@ -193,5 +194,9 @@ public class MainController implements Initializable {
     private void setOnlineFriends() {
         ObservableList<String> items = FXCollections.observableArrayList(friendsList.keySet());
         list.setItems(items);
+    }
+
+    static void closeTab(String username) {
+        tabs.remove(username);
     }
 }
