@@ -10,11 +10,13 @@
    <children>
       <SplitPane dividerPositions="0.2608695652173913" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <items>
-          <AnchorPane SplitPane.resizableWithParent="false">
+            <VBox>
                <children>
-                  <ListView fx:id="list" layoutY="40.0" onMouseClicked="#listAction" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                  <ListView fx:id="list" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" onMouseClicked="#listAction" />
+                  <TextField fx:id="txtAddFriend" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" promptText="Type a username" />
+                  <Button fx:id="btAddFriend" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#addFriendAction" text="+ Add Friend" />
                </children>
-            </AnchorPane>
+            </VBox>
           <AnchorPane>
                <children>
                   <TabPane fx:id="tabPane" layoutX="84.0" tabClosingPolicy="ALL_TABS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />

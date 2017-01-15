@@ -5,6 +5,7 @@ import Server.ServerInterface;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
@@ -18,18 +19,29 @@ import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 
 public class MainController implements Initializable {
 
     @FXML
+    private AnchorPane main;
+    @FXML
     private ListView<String> list = new ListView<>();
     @FXML
     private TabPane tabPane;
+    @FXML
+    private TextField txtAddFriend;
+    @FXML
+    private Button btAddFriend;
 
     static Client client;
     static String username;
@@ -42,7 +54,7 @@ public class MainController implements Initializable {
 
     ServerInterface stub = null;
 
-    HashMap friendsList = new HashMap();
+    HashMap<String, List<String>> friendsList = new HashMap();
     HashMap<String, List<String>> conversation = new HashMap<>();
     static HashMap<String, TabConversation> tabs = new HashMap<>();
 
@@ -120,10 +132,11 @@ public class MainController implements Initializable {
     }
 
     /**
-     * When clicked on a item on the online friends list
-     * open a new tab if is not already open
+     * When clicked on a item on the online friends list open a new tab if is
+     * not already open
+     *
      * @param event
-     * @throws IOException 
+     * @throws IOException
      */
     @FXML
     private void listAction(MouseEvent event) throws IOException {
@@ -131,8 +144,8 @@ public class MainController implements Initializable {
             String selected = list.getSelectionModel().getSelectedItem();
 
             TabConversation tab = new TabConversation(username, selected,
-                    friendsList.get(selected).toString().split(":")[0],
-                    Integer.parseInt(friendsList.get(selected).toString().split(":")[1]));
+                    friendsList.get(selected).get(0),
+                    Integer.parseInt(friendsList.get(selected).get(1)));
             tab.setText(selected);
 
             tabPane.getTabs().add(tab);
@@ -167,9 +180,10 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Set the conversation to a tab.
-     * Creates a new tab if there's no match for a tab.
-     * @throws IOException 
+     * Set the conversation to a tab. Creates a new tab if there's no match for
+     * a tab.
+     *
+     * @throws IOException
      */
     private void setConversation() throws IOException {
         if (!conversation.isEmpty()) {
@@ -178,13 +192,13 @@ public class MainController implements Initializable {
                     String incomingUsername = entry.getKey();
 
                     TabConversation tab = new TabConversation(username, incomingUsername,
-                            friendsList.get(incomingUsername).toString().split(":")[0],
-                            Integer.parseInt(friendsList.get(incomingUsername).toString().split(":")[1]));
+                            friendsList.get(incomingUsername).get(0),
+                            Integer.parseInt(friendsList.get(incomingUsername).get(1)));
                     tab.setText(incomingUsername);
 
                     tabPane.getTabs().add(tab);
                     tabs.put(incomingUsername, tab);
-   
+
                     for (String item : entry.getValue()) {
                         tab.setLabelConversationText(tab.getLabelConversationText() + "\n" + item);
                     }
@@ -220,9 +234,29 @@ public class MainController implements Initializable {
 
     /**
      * Remove the tab from the hashmap before closing it.
-     * @param username 
+     *
+     * @param username
      */
     static void closeTab(String username) {
         tabs.remove(username);
+    }
+
+    @FXML
+    private void addFriendAction(ActionEvent event) throws RemoteException {
+        Boolean addFriendStatus = stub.addFriend(username, txtAddFriend.getText());
+        txtAddFriend.setText("");
+        if (addFriendStatus) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Add Friend Saved");
+            alert.setHeaderText("Friend Added");
+            alert.setContentText("The friend was added successfully");
+            alert.showAndWait();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Add Friend Error");
+            alert.setHeaderText("Error Adding a Friend!");
+            alert.setContentText("Something went wrong.");
+            alert.showAndWait();
+        }
     }
 }

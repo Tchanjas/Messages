@@ -13,8 +13,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server implements ServerInterface {
@@ -22,7 +24,7 @@ public class Server implements ServerInterface {
     String dbDriver = "org.apache.derby.jdbc.ClientDriver";
     static String dbUrl = "jdbc:derby://localhost:1527/Messages;autoReconnect=true'";
     static Connection conn;
-    ConcurrentHashMap<String, String> onlineUsers = new ConcurrentHashMap<>();
+    ConcurrentHashMap<String, List<String>> onlineUsers = new ConcurrentHashMap<>();
     static KeyPair keys;
 
     public static void main(String args[]) {
@@ -45,10 +47,10 @@ public class Server implements ServerInterface {
         }
     }
 
-    public PublicKey getPublicKey(){
+    public PublicKey getPublicKey() {
         return keys.getPublic();
     }
-    
+
     /**
      * This method will function aswell as a keepAlive for each client
      */
@@ -56,6 +58,11 @@ public class Server implements ServerInterface {
     public HashMap onlineFriends(String username) throws RemoteException {
         HashMap users = new HashMap();
         try {
+            long currentTimeStamp = System.currentTimeMillis() / 1000;
+            if (onlineUsers.get(username) != null) {
+                onlineUsers.get(username).set(2, currentTimeStamp + "");
+            }
+            
             Class.forName(dbDriver).newInstance();
             Statement stmnt = conn.createStatement();
             ResultSet friends = stmnt.executeQuery("select u.USERNAME "
@@ -67,7 +74,13 @@ public class Server implements ServerInterface {
                     + "where USERNAME like '" + username + "'))");
             while (friends.next()) {
                 if (onlineUsers.get(friends.getString("USERNAME")) != null) {
-                    users.put(friends.getString("USERNAME"), onlineUsers.get(friends.getString("USERNAME")));
+                    long timeStamp = Long.parseLong(onlineUsers.get(friends.getString("USERNAME")).get(2));
+
+                    if ((currentTimeStamp - timeStamp) < 15) {
+                        users.put(friends.getString("USERNAME"), onlineUsers.get(friends.getString("USERNAME")));
+                    } else {
+                        onlineUsers.remove(friends.getString("USERNAME"));
+                    }
                 }
             }
             stmnt.close();
@@ -115,7 +128,15 @@ public class Server implements ServerInterface {
             if (existingUser.next()) {
                 result = true;
                 System.out.println("User " + username + " at " + ip + ":" + port + " logged at " + new Date());
-                onlineUsers.put(username, ip + ":" + port);
+                List<String> list = new ArrayList<>();
+                list.add(ip);
+                list.add(port);
+                long unixTime = System.currentTimeMillis() / 1000;
+                list.add(unixTime + "");
+                if (onlineUsers.get(username) != null) {
+                    onlineUsers.remove(username);
+                }
+                onlineUsers.put(username, list);
             } else {
                 result = false;
             }
