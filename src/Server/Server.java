@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.PublicKey;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -32,7 +33,6 @@ public class Server implements ServerInterface {
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.createRegistry(10000);
             registry.bind("Server", stub);
-
             System.out.println("Server running");
         } catch (AlreadyBoundException | RemoteException | SQLException e) {
             System.err.println("Server exception: " + e.toString());
@@ -74,7 +74,9 @@ public class Server implements ServerInterface {
         try {
             Class.forName(dbDriver).newInstance();
             Statement stmnt = conn.createStatement();
-            ResultSet existingUser = stmnt.executeQuery("select * from APP.USERS where USERNAME like '" + username + "'");
+            ResultSet existingUser = stmnt.executeQuery("select * "
+                    + "from APP.USERS "
+                    + "where USERNAME like '" + username + "'");
             if (!existingUser.next()) {
                 stmnt.execute("insert into APP.USERS(USERNAME,PASSWORD) values('" + username + "','" + password + "')");
                 result = true;
@@ -96,7 +98,9 @@ public class Server implements ServerInterface {
             Class.forName(dbDriver).newInstance();
             Connection conn = DriverManager.getConnection(dbUrl);
             Statement stmnt = conn.createStatement();
-            ResultSet existingUser = stmnt.executeQuery("select * from APP.USERS where USERNAME like '" + username
+            ResultSet existingUser = stmnt.executeQuery("select * "
+                    + "from APP.USERS "
+                    + "where USERNAME like '" + username
                     + "' and PASSWORD like '" + password + "'");
             if (existingUser.next()) {
                 result = true;
@@ -110,5 +114,42 @@ public class Server implements ServerInterface {
             System.out.println(ex.getMessage());
         }
         return result;
+    }
+
+    @Override
+    public boolean addFriend(String user, String friend) throws RemoteException {
+        try {
+            Class.forName(dbDriver).newInstance();
+            Connection conn = DriverManager.getConnection(dbUrl);
+            Statement stmnt = conn.createStatement();
+            ResultSet result = stmnt.executeQuery("SELECT id "
+                    + "FROM USERS "
+                    + "where username "
+                    + "like '" + user + "' or username like '" + friend + "'");
+            if (result.next()) {
+                int idUser = Integer.parseInt(result.getString("ID"));
+                if (result.next()) {
+                    int idFriend = Integer.parseInt(result.getString("ID"));
+                    result = stmnt.executeQuery("select * "
+                            + "from friends "
+                            + "where IDUSER = " + idUser + " and IDFRIEND = " + idFriend + "");
+                    if (result.next()) {
+                        return false;
+                    } else {
+                        stmnt.execute("insert into APP.FRIENDS(IDUSER,IDFRIEND) values(" + idUser + "," + idFriend + ")");
+                        stmnt.execute("insert into APP.FRIENDS(IDUSER,IDFRIEND) values(" + idFriend + "," + idUser + ")");
+                        System.out.println("inserted friend");
+                        return true;
+                    }
+                } else {
+                    System.out.println("no frienduser");
+                    return false;
+                }
+            }
+            stmnt.close();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return false;
     }
 }

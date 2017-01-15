@@ -3,9 +3,6 @@ package UI;
 import Server.ServerInterface;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -77,6 +74,7 @@ public class SignupController implements Initializable {
         try {
             Registry registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
             ServerInterface stub = (ServerInterface) registry.lookup("Server");
+            //String hash = Utils.BCrypt.hashpw(pfPass.getText(), Utils.BCrypt.gensalt());
             boolean response = stub.register(txtUser.getText(), pfPass.getText());
             
             if (response == true) {

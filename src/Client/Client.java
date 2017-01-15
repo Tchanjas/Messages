@@ -7,6 +7,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -19,7 +20,8 @@ public class Client implements ClientInterface {
     int port;
     private static List<String> conversation = new ArrayList<String>();
 
-    private Client() {}
+    private Client() {
+    }
 
     public Client(String username, String IP, int port) throws IOException, RemoteException, AlreadyBoundException {
         this.IP = IP;
@@ -28,7 +30,6 @@ public class Client implements ClientInterface {
 
         Client obj = new Client();
         ClientInterface stub = (ClientInterface) UnicastRemoteObject.exportObject(obj, 0);
-
         // Bind the remote object's stub in the registry
         Registry registry = LocateRegistry.createRegistry(port);
         registry.bind("Client", stub);

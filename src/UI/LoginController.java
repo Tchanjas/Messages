@@ -7,8 +7,6 @@ import java.net.Inet4Address;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -100,6 +98,7 @@ public class LoginController implements Initializable {
                 alert.showAndWait();
             }
         } catch (Exception ex) {
+            System.out.println(ex.getMessage());
         }
     }
 
