@@ -36,6 +36,7 @@ public class TabConversation extends Tab {
         this.IP = IP;
         this.port = port;
 
+        // tab content
         FlowPane conversationPane = new FlowPane();
 
         labelConversation.setAlignment(Pos.TOP_LEFT);
@@ -55,6 +56,7 @@ public class TabConversation extends Tab {
 
         this.setContent(conversationPane);
 
+        // on tab close
         this.setOnCloseRequest(e -> closeTab());
     }
 
@@ -93,6 +95,7 @@ public class TabConversation extends Tab {
     private void sendAction(ActionEvent event) {
         try {
             date = new Date();
+            // send a message = message, destination username, source username, destination IP, destination port
             MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + textAreaSend.getText(),
                     username, IP, port);
             textAreaSend.setText("");

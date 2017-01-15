@@ -91,6 +91,8 @@ public class MainController implements Initializable {
             @Override
             public void run() {
                 getConversation();
+                // due to javafx UI updates having to be on the main thread
+                // we need to do set the conversation with Platform.runLater
                 Platform.runLater(new Runnable() {
                     public void run() {
                         try {
@@ -117,6 +119,12 @@ public class MainController implements Initializable {
         }, 0, 5000);
     }
 
+    /**
+     * When clicked on a item on the online friends list
+     * open a new tab if is not already open
+     * @param event
+     * @throws IOException 
+     */
     @FXML
     private void listAction(MouseEvent event) throws IOException {
         if (tabs.get(list.getSelectionModel().getSelectedItem()) == null) {
@@ -140,6 +148,9 @@ public class MainController implements Initializable {
         MainController.username = username;
     }
 
+    /**
+     * Get the conversation from the client.
+     */
     private void getConversation() {
         if (client.getConversation() != null && !client.getConversation().isEmpty()) {
             for (HashMap.Entry<String, List<String>> entry : client.getConversation().entrySet()) {
@@ -155,6 +166,11 @@ public class MainController implements Initializable {
         client.clearConversation();
     }
 
+    /**
+     * Set the conversation to a tab.
+     * Creates a new tab if there's no match for a tab.
+     * @throws IOException 
+     */
     private void setConversation() throws IOException {
         if (!conversation.isEmpty()) {
             for (HashMap.Entry<String, List<String>> entry : conversation.entrySet()) {
@@ -183,6 +199,9 @@ public class MainController implements Initializable {
         }
     }
 
+    /**
+     * Get the friends online via the server.
+     */
     private void getOnlineFriends() {
         try {
             friendsList = stub.onlineFriends(username);
@@ -191,11 +210,18 @@ public class MainController implements Initializable {
         }
     }
 
+    /**
+     * Set the friends online on the ListView interface.
+     */
     private void setOnlineFriends() {
         ObservableList<String> items = FXCollections.observableArrayList(friendsList.keySet());
         list.setItems(items);
     }
 
+    /**
+     * Remove the tab from the hashmap before closing it.
+     * @param username 
+     */
     static void closeTab(String username) {
         tabs.remove(username);
     }
