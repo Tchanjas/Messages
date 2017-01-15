@@ -1,6 +1,8 @@
 package UI;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -9,11 +11,12 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class UI extends Application {
 
     private static BorderPane root = new BorderPane();
-    private static Node previousNode;
+    private static Node previousNode; // so we can go back to the previous node
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -29,6 +32,15 @@ public class UI extends Application {
         stage.setResizable(false);
         stage.getIcons().add(new Image(this.getClass().getResource("icon.png").toString()));
         stage.show();
+
+        // close the application
+        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent e) {
+                Platform.exit();
+                System.exit(0);
+            }
+        });
     }
 
     /**
