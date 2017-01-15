@@ -1,10 +1,13 @@
 package Server;
 
+import Utils.Crypto;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -20,6 +23,7 @@ public class Server implements ServerInterface {
     static String dbUrl = "jdbc:derby://localhost:1527/Messages;autoReconnect=true'";
     static Connection conn;
     ConcurrentHashMap<String, String> onlineUsers = new ConcurrentHashMap<>();
+    static KeyPair keys;
 
     public static void main(String args[]) {
         try {
@@ -32,12 +36,19 @@ public class Server implements ServerInterface {
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.createRegistry(10000);
             registry.bind("Server", stub);
+
+            keys = Crypto.generateKeypair("RSA");
+
             System.out.println("Server running");
         } catch (AlreadyBoundException | RemoteException | SQLException e) {
             System.err.println("Server exception: " + e.toString());
         }
     }
 
+    public PublicKey getPublicKey(){
+        return keys.getPublic();
+    }
+    
     /**
      * This method will function aswell as a keepAlive for each client
      */
@@ -103,7 +114,7 @@ public class Server implements ServerInterface {
                     + "' and PASSWORD like '" + password + "'");
             if (existingUser.next()) {
                 result = true;
-                System.out.println("User " + username + " at " + ip + ":" + port + " logged at " + new Date());
+                System.out.println("User " + username + " logged at " + new Date());
                 onlineUsers.put(username, ip + ":" + port);
             } else {
                 result = false;
