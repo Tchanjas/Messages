@@ -12,7 +12,7 @@
         <items>
             <VBox>
                <children>
-                  <ListView fx:id="list" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" onMouseClicked="#listAction" />
+                  <ListView fx:id="list" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" onContextMenuRequested="#contextMenuAction" onMouseClicked="#listAction" />
                   <TextField fx:id="txtAddFriend" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" promptText="Type a username" />
                   <Button fx:id="btAddFriend" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#addFriendAction" text="+ Add Friend" />
                </children>

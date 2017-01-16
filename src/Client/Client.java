@@ -8,6 +8,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import static java.util.Collections.list;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
@@ -18,7 +19,7 @@ public class Client implements ClientInterface {
     String IP;
     String username;
     int port;
-    static HashMap<String, List<String>> conversation = new HashMap<String, List<String>>();
+    static HashMap<String, Object[]> conversation = new HashMap<String, Object[]>();
 
     private Client() {
     }
@@ -36,36 +37,40 @@ public class Client implements ClientInterface {
     }
 
     @Override
-    public void sendMessage(String message, String username, String IP, int port) throws RemoteException, AccessException {
+    public void sendMessage(String message, String username, String IP, int port, HashMap users) throws RemoteException, AccessException {
         try {
             Registry registry = LocateRegistry.getRegistry(IP, port);
             ClientInterface stub = (ClientInterface) registry.lookup("Client");
-            stub.getMessage(message, this.username, this.IP, this.port);
-            
-            if (conversation.get(username) == null) {
-                List<String> list = new ArrayList<String>();
-                list.add(message);
-                conversation.put(username, list);
-            } else {
-                conversation.get(username).add(message);
-            }
+            stub.getMessage(message, username, users);
         } catch (Exception ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     @Override
-    public void getMessage(String message, String username, String IP, int port) throws RemoteException {
+    public void getMessage(String message, String username, HashMap users) throws RemoteException {
         if (conversation.get(username) == null) {
-            List<String> list = new ArrayList<String>();
-            list.add(message);
+            Object[] list = new Object[2];
+            List<String> listMessages = new ArrayList<String>();
+            listMessages.add(message);
+            list[0] = listMessages;
+            list[1] = users;
             conversation.put(username, list);
         } else {
-            conversation.get(username).add(message);
+            Object[] list = new Object[2];
+            List<String> listMessages = (List) conversation.get(username)[0];
+            listMessages.add(message);
+            list[0] = listMessages;
+            HashMap listUsers = (HashMap) conversation.get(username)[1];
+            listUsers.putAll(users);
+            list[1] = listUsers;
+
+            conversation.remove(username);
+            conversation.put(username, list);
         }
     }
 
-    public HashMap<String, List<String>> getConversation() {
+    public HashMap<String, Object[]> getConversation() {
         return conversation;
     }
 

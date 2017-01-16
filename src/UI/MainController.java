@@ -4,12 +4,18 @@ import Client.Client;
 import Server.ServerInterface;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Timer;
@@ -20,13 +26,19 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.EventType;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Side;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 
@@ -48,15 +60,19 @@ public class MainController implements Initializable {
 
     Properties configProperties = null;
 
-    String clientPort = null;
+    static String clientIP = null;
+    static String clientPort = null;
     String serverIP = null;
     String serverPort = null;
 
     ServerInterface stub = null;
 
     HashMap<String, List<String>> friendsList = new HashMap();
-    HashMap<String, List<String>> conversation = new HashMap<>();
+    HashMap<String, Object[]> conversation = new HashMap<String, Object[]>();
     static HashMap<String, TabConversation> tabs = new HashMap<>();
+
+    ContextMenu contextMenu = new ContextMenu();
+    Boolean contextMenuSet = false;
 
     /**
      * Initializes the controller class.
@@ -64,26 +80,30 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         FileInputStream in = null;
-
-        try {
-            // create and load default properties
-            configProperties = new Properties();
-            in = new FileInputStream("config.properties");
-            configProperties.load(in);
-            in.close();
-        } catch (Exception ex) {
-        } finally {
+        do {
             try {
+                // create and load default properties
+                configProperties = new Properties();
+                in = new FileInputStream("config.properties");
+                configProperties.load(in);
                 in.close();
             } catch (Exception ex) {
+            } finally {
+                try {
+                    in.close();
+                } catch (Exception ex) {
+                }
             }
-        }
+        } while (configProperties == null);
 
-        if (configProperties != null) {
-            clientPort = configProperties.getProperty("clientPort");
-            serverIP = configProperties.getProperty("serverIP");
-            serverPort = configProperties.getProperty("serverPort");
+        try {
+            clientIP = Inet4Address.getLocalHost().getHostAddress().toString();
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
         }
+        clientPort = configProperties.getProperty("clientPort");
+        serverIP = configProperties.getProperty("serverIP");
+        serverPort = configProperties.getProperty("serverPort");
 
         try {
             client = new Client(username, "localhost", Integer.parseInt(clientPort));
@@ -129,6 +149,16 @@ public class MainController implements Initializable {
                 });
             }
         }, 0, 5000);
+
+        MenuItem item = new MenuItem("Add to current conversation");
+        item.setOnAction(e -> {
+            try {
+                addToConversation();
+            } catch (IOException ex) {
+                Logger.getLogger(MainController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
+        contextMenu.getItems().addAll(item);
     }
 
     /**
@@ -140,16 +170,35 @@ public class MainController implements Initializable {
      */
     @FXML
     private void listAction(MouseEvent event) throws IOException {
-        if (tabs.get(list.getSelectionModel().getSelectedItem()) == null) {
+        if (list.getSelectionModel().getSelectedItem() != null) {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                if (tabs.get(list.getSelectionModel().getSelectedItem()) == null) {
+                    String selected = list.getSelectionModel().getSelectedItem();
+
+                    TabConversation tab = new TabConversation(username, clientIP, clientPort,
+                            selected, friendsList.get(selected).get(0),
+                            Integer.parseInt(friendsList.get(selected).get(1)));
+                    tab.setText(selected);
+
+                    tabPane.getTabs().add(tab);
+                    tabs.put(selected, tab);
+                }
+            }
+        }
+    }
+
+    private void addToConversation() throws IOException {
+        if (list.getSelectionModel().getSelectedItem() != null) {
             String selected = list.getSelectionModel().getSelectedItem();
 
-            TabConversation tab = new TabConversation(username, selected,
-                    friendsList.get(selected).get(0),
-                    Integer.parseInt(friendsList.get(selected).get(1)));
-            tab.setText(selected);
-
-            tabPane.getTabs().add(tab);
-            tabs.put(selected, tab);
+            if (tabPane.getSelectionModel().getSelectedItem() != null
+                    && !tabPane.getSelectionModel().getSelectedItem().getText().matches(selected)) {
+                String tabText = tabPane.getSelectionModel().getSelectedItem().getText();
+                TabConversation tab = tabs.get(tabText);
+                tab.addUser(selected, friendsList.get(selected).get(0), Integer.parseInt(friendsList.get(selected).get(1)));
+                tabs.put(tab.getText(), tab);
+                tabs.remove(tabText);
+            }
         }
     }
 
@@ -161,17 +210,33 @@ public class MainController implements Initializable {
         MainController.username = username;
     }
 
+    public static String getIP() {
+        return clientIP;
+    }
+
+    public static String getPort() {
+        return clientPort;
+    }
+
     /**
      * Get the conversation from the client.
      */
     private void getConversation() {
         if (client.getConversation() != null && !client.getConversation().isEmpty()) {
-            for (HashMap.Entry<String, List<String>> entry : client.getConversation().entrySet()) {
-                if (!entry.getValue().isEmpty()) {
+            for (HashMap.Entry<String, Object[]> entry : client.getConversation().entrySet()) {
+                if (entry.getValue().length > 0) {
                     if (conversation.get(entry.getKey()) == null) {
                         conversation.put(entry.getKey(), entry.getValue());
                     } else {
-                        conversation.get(entry.getKey()).addAll(entry.getValue());
+                        Object[] list = new Object[2];
+                        List<String> listMessages = (List) conversation.get(entry.getKey())[0];
+                        listMessages.addAll((List) entry.getValue()[0]);
+
+                        HashMap listUsers = (HashMap) conversation.get(entry.getKey())[1];
+                        listUsers.putAll((HashMap) entry.getValue()[1]);
+
+                        conversation.remove(entry.getKey());
+                        conversation.put(entry.getKey(), list);
                     }
                 }
             }
@@ -187,24 +252,41 @@ public class MainController implements Initializable {
      */
     private void setConversation() throws IOException {
         if (!conversation.isEmpty()) {
-            for (HashMap.Entry<String, List<String>> entry : conversation.entrySet()) {
+            for (HashMap.Entry<String, Object[]> entry : conversation.entrySet()) {
                 if (tabs.get(entry.getKey()) == null) {
-                    String incomingUsername = entry.getKey();
 
-                    TabConversation tab = new TabConversation(username, incomingUsername,
-                            friendsList.get(incomingUsername).get(0),
-                            Integer.parseInt(friendsList.get(incomingUsername).get(1)));
-                    tab.setText(incomingUsername);
+                    ArrayList<String> users = new ArrayList<String>(Arrays.asList(entry.getKey().split(",")));
+
+                    HashMap<String, List<String>> listUsers = (HashMap<String, List<String>>) conversation.get(entry.getKey())[1];
+
+                    TabConversation tab = new TabConversation(username, clientIP, clientPort,
+                            users.get(0), listUsers.get(users.get(0)).get(1),
+                            Integer.parseInt(listUsers.get(users.get(0)).get(2)));
+                    tab.setText(users.get(0));
 
                     tabPane.getTabs().add(tab);
-                    tabs.put(incomingUsername, tab);
+                    tabs.put(users.get(0), tab);
+                    users.remove(0);
+                    String oldTab = users.get(0);
 
-                    for (String item : entry.getValue()) {
+                    if (!users.isEmpty()) {
+                        while (!users.isEmpty()) {
+                            tab.addUser(users.get(0), listUsers.get(users.get(0)).get(1),
+                                    Integer.parseInt(listUsers.get(users.get(0)).get(2)));
+                            users.remove(0);
+                        }
+                        tabs.put(entry.getKey(), tab);
+                        tabs.remove(oldTab);
+                    }
+
+                    List<String> list = (List) entry.getValue()[0];
+                    for (String item : list) {
                         tab.setLabelConversationText(tab.getLabelConversationText() + "\n" + item);
                     }
                 } else {
                     TabConversation tab = tabs.get(entry.getKey());
-                    for (String item : entry.getValue()) {
+                    List<String> list = (List) entry.getValue()[0];
+                    for (String item : list) {
                         tab.setLabelConversationText(tab.getLabelConversationText() + "\n" + item);
                     }
                 }
@@ -258,5 +340,11 @@ public class MainController implements Initializable {
             alert.setContentText("Something went wrong.");
             alert.showAndWait();
         }
+    }
+
+    @FXML
+    private void contextMenuAction(ContextMenuEvent event) {
+        contextMenu.setAutoHide(true);
+        contextMenu.show(UI.getRoot().getScene().getWindow(), event.getScreenX(), event.getScreenY());
     }
 }

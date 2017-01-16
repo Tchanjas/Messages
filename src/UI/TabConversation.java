@@ -1,9 +1,14 @@
 package UI;
 
+import static UI.MainController.username;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.event.ActionEvent;
@@ -17,9 +22,8 @@ import javafx.scene.layout.FlowPane;
 public class TabConversation extends Tab {
 
     private String clientUsername;
-    private String username;
-    private String IP;
-    private int port;
+    private String tabTitle;
+    HashMap<String, List<String>> users = new HashMap();
 
     private DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
     private Date date;
@@ -28,11 +32,20 @@ public class TabConversation extends Tab {
     private TextArea textAreaSend = new TextArea();
     private Button btSend = new Button();
 
-    public TabConversation(String clientUsername, String username, String IP, int port) throws IOException {
+    public TabConversation(String clientUsername, String clientIP, String clientPort, String username, String IP, int port) throws IOException {
         this.clientUsername = clientUsername;
-        this.username = username;
-        this.IP = IP;
-        this.port = port;
+        this.tabTitle = username;
+        List<String> list = new ArrayList();
+        list.add(clientUsername);
+        list.add(clientIP);
+        list.add(clientPort);
+        users.put(clientUsername, list);
+
+        list = new ArrayList();
+        list.add(username);
+        list.add(IP);
+        list.add(port + "");
+        users.put(username, list);
 
         // tab content
         FlowPane conversationPane = new FlowPane();
@@ -58,30 +71,6 @@ public class TabConversation extends Tab {
         this.setOnCloseRequest(e -> closeTab());
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getIP() {
-        return IP;
-    }
-
-    public void setIP(String IP) {
-        this.IP = IP;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public String getLabelConversationText() {
         return labelConversation.getText();
     }
@@ -92,10 +81,25 @@ public class TabConversation extends Tab {
 
     private void sendAction(ActionEvent event) {
         try {
+            String usersConcat = "";
+            for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
+                if (usersConcat.isEmpty()) {
+                    usersConcat = entry.getKey();
+                } else {
+                    usersConcat = usersConcat + "," + entry.getKey();
+                }
+            }
+
             date = new Date();
-            // send a message = message, destination username, source username, destination IP, destination port
-            MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + textAreaSend.getText(),
-                    username, IP, port);
+            // send for each user in the tab
+            // each message = message, concat of usernames, destination IP, destination port
+            for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
+                String entryTabTitle = usersConcat.replaceAll(entry.getValue().get(0) + ",", "");
+                entryTabTitle = entryTabTitle.replaceAll("," + entry.getValue().get(0), "");
+                MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + textAreaSend.getText(),
+                    entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users);
+            }
+
             textAreaSend.setText("");
         } catch (Exception ex) {
             Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
@@ -103,6 +107,16 @@ public class TabConversation extends Tab {
     }
 
     private void closeTab() {
-        MainController.closeTab(username);
+        MainController.closeTab(tabTitle);
+    }
+
+    void addUser(String username, String IP, int port) {
+        this.tabTitle = this.tabTitle + "," + username;
+        List<String> list = new ArrayList();
+        list.add(username);
+        list.add(IP);
+        list.add(port + "");
+        users.put(username, list);
+        this.setText(this.tabTitle);
     }
 }
