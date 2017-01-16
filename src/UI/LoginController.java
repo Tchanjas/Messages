@@ -1,12 +1,17 @@
 package UI;
 
 import Server.ServerInterface;
+import Utils.BCrypt;
+import Utils.Crypto;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.Key;
+import java.security.PublicKey;
+import java.util.Base64;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -71,8 +76,16 @@ public class LoginController implements Initializable {
         try {
             Registry registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
             ServerInterface stub = (ServerInterface) registry.lookup("Server");
-            boolean response = stub.authenticate(txtUser.getText(), pfPass.getText(), 
-                    Inet4Address.getLocalHost().getHostAddress().toString(), clientPort);
+            
+            Key serverKey = stub.getPublicKey();
+            
+            String encodUser = Base64.getEncoder().encodeToString(Crypto.cypher(txtUser.getText().getBytes(), serverKey));
+            String encodPass = Base64.getEncoder().encodeToString(Crypto.cypher(pfPass.getText().getBytes(), serverKey));
+            String encodIP = Base64.getEncoder().encodeToString(Crypto.cypher(
+                    Inet4Address.getLocalHost().getHostAddress().getBytes(), serverKey));
+            String encodPort = Base64.getEncoder().encodeToString(Crypto.cypher(clientPort.getBytes(), serverKey));
+            
+            boolean response = stub.authenticate(encodUser, encodPass, encodIP, encodPort);
             
             if (response == true) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);

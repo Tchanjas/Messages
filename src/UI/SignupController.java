@@ -1,11 +1,14 @@
 package UI;
 
 import Server.ServerInterface;
+import Utils.Crypto;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.Key;
+import java.util.Base64;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -74,9 +77,14 @@ public class SignupController implements Initializable {
         try {
             Registry registry = LocateRegistry.getRegistry(serverIP, Integer.parseInt(serverPort));
             ServerInterface stub = (ServerInterface) registry.lookup("Server");
-            //String hash = Utils.BCrypt.hashpw(pfPass.getText(), Utils.BCrypt.gensalt());
-            boolean response = stub.register(txtUser.getText(), pfPass.getText());
-            
+
+            Key serverKey = stub.getPublicKey();
+
+            String hash = Utils.BCrypt.hashpw(pfPass.getText(), Utils.BCrypt.gensalt());
+            String encodUser = Base64.getEncoder().encodeToString(Crypto.cypher(txtUser.getText().getBytes(), serverKey));
+            String encodPass = Base64.getEncoder().encodeToString(Crypto.cypher(hash.getBytes(), serverKey));
+            boolean response = stub.register(encodUser, encodPass);
+
             if (response == true) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Registration Successful");

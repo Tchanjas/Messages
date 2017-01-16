@@ -1,11 +1,14 @@
 package Server;
 
+import Utils.BCrypt;
 import Utils.Crypto;
+import java.io.UnsupportedEncodingException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.sql.Connection;
@@ -14,17 +17,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Server implements ServerInterface {
 
     String dbDriver = "org.apache.derby.jdbc.ClientDriver";
     static String dbUrl = "jdbc:derby://localhost:1527/Messages;autoReconnect=true'";
     static Connection conn;
-    ConcurrentHashMap<String, List<String>> onlineUsers = new ConcurrentHashMap<>();
+    ConcurrentHashMap<String, List<String>> onlineUsers = new ConcurrentHashMap<String, List<String>>();
+    ConcurrentHashMap<String, Key> sessionKeys = new ConcurrentHashMap<String, Key>();
     static KeyPair keys;
 
     public static void main(String args[]) {
@@ -40,14 +47,14 @@ public class Server implements ServerInterface {
             registry.bind("Server", stub);
 
             keys = Crypto.generateKeypair("RSA");
-
             System.out.println("Server running");
         } catch (AlreadyBoundException | RemoteException | SQLException e) {
             System.err.println("Server exception: " + e.toString());
         }
     }
 
-    public PublicKey getPublicKey() {
+    @Override
+    public PublicKey getPublicKey() throws RemoteException {
         return keys.getPublic();
     }
 
@@ -62,7 +69,7 @@ public class Server implements ServerInterface {
             if (onlineUsers.get(username) != null) {
                 onlineUsers.get(username).set(2, currentTimeStamp + "");
             }
-            
+
             Class.forName(dbDriver).newInstance();
             Statement stmnt = conn.createStatement();
             ResultSet friends = stmnt.executeQuery("select u.USERNAME "
@@ -97,6 +104,13 @@ public class Server implements ServerInterface {
         try {
             Class.forName(dbDriver).newInstance();
             Statement stmnt = conn.createStatement();
+
+            byte[] newUser = Base64.getDecoder().decode(username);
+            byte[] newPass = Base64.getDecoder().decode(password);
+
+            username = new String(Crypto.decypher(newUser, keys.getPrivate()), "UTF-8");
+            password = new String(Crypto.decypher(newPass, keys.getPrivate()), "UTF-8");
+
             ResultSet existingUser = stmnt.executeQuery("select * "
                     + "from APP.USERS "
                     + "where USERNAME like '" + username + "'");
@@ -108,7 +122,7 @@ public class Server implements ServerInterface {
                 result = false;
             }
             stmnt.close();
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | SQLException ex) {
+        } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
         return result;
@@ -121,28 +135,46 @@ public class Server implements ServerInterface {
             Class.forName(dbDriver).newInstance();
             Connection conn = DriverManager.getConnection(dbUrl);
             Statement stmnt = conn.createStatement();
+
+            byte[] authUser = Base64.getDecoder().decode(username);
+            byte[] authPass = Base64.getDecoder().decode(password);
+            byte[] authIP = Base64.getDecoder().decode(ip);
+            byte[] authPort = Base64.getDecoder().decode(port);
+
+            username = new String(Crypto.decypher(authUser, keys.getPrivate()), "UTF-8");
+            password = new String(Crypto.decypher(authPass, keys.getPrivate()), "UTF-8");
+            ip = new String(Crypto.decypher(authIP, keys.getPrivate()), "UTF-8");
+            port = new String(Crypto.decypher(authPort, keys.getPrivate()), "UTF-8");
+
             ResultSet existingUser = stmnt.executeQuery("select * "
                     + "from APP.USERS "
-                    + "where USERNAME like '" + username
-                    + "' and PASSWORD like '" + password + "'");
+                    + "where USERNAME like '" + username + "'");
+
             if (existingUser.next()) {
-                result = true;
-                System.out.println("User " + username + " at " + ip + ":" + port + " logged at " + new Date());
-                List<String> list = new ArrayList<>();
-                list.add(ip);
-                list.add(port);
-                long unixTime = System.currentTimeMillis() / 1000;
-                list.add(unixTime + "");
-                if (onlineUsers.get(username) != null) {
-                    onlineUsers.remove(username);
+                String hashCheck = existingUser.getString("PASSWORD");
+                if (BCrypt.checkpw(password, hashCheck)) {
+                    result = true;
+                    System.out.println("User " + username + " at " + ip + ":" + port + " logged at " + new Date());
+                    List<String> list = new ArrayList<>();
+                    list.add(ip);
+                    list.add(port);
+                    long unixTime = System.currentTimeMillis() / 1000;
+                    list.add(unixTime + "");
+                    if (onlineUsers.get(username) != null) {
+                        onlineUsers.remove(username);
+                    }
+                    onlineUsers.put(username, list);
+                } else {
+                    result = false;
                 }
-                onlineUsers.put(username, list);
             } else {
                 result = false;
             }
             stmnt.close();
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | SQLException ex) {
             System.out.println(ex.getMessage());
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         return result;
     }
@@ -180,5 +212,14 @@ public class Server implements ServerInterface {
             System.out.println(ex.getMessage());
         }
         return false;
+    }
+
+    @Override
+    public void addSessionKey(String username, Key sessionKey) throws RemoteException {
+        try {
+            sessionKeys.put(username, sessionKey);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 }
