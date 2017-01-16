@@ -1,14 +1,14 @@
 package UI;
 
-import static UI.MainController.username;
+import java.io.File;
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.event.ActionEvent;
@@ -18,6 +18,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.FlowPane;
+import javafx.stage.FileChooser;
 
 public class TabConversation extends Tab {
 
@@ -30,7 +31,8 @@ public class TabConversation extends Tab {
 
     private Label labelConversation = new Label();
     private TextArea textAreaSend = new TextArea();
-    private Button btSend = new Button();
+    private Button btSendMessage = new Button();
+    private Button btSendFile = new Button();
 
     public TabConversation(String clientUsername, String clientIP, String clientPort, String username, String IP, int port) throws IOException {
         this.clientUsername = clientUsername;
@@ -54,16 +56,22 @@ public class TabConversation extends Tab {
         labelConversation.setPrefHeight(300.0);
         labelConversation.setPrefWidth(400.0);
         textAreaSend.setPrefHeight(78.0);
-        textAreaSend.setPrefWidth(395.0);
+        textAreaSend.setPrefWidth(325.0);
 
-        btSend.setText("Send");
-        btSend.setOnAction(e -> sendAction(e));
-        btSend.setPrefHeight(78.0);
-        btSend.setPrefWidth(50.0);
+        btSendMessage.setText("Send \n Message");
+        btSendMessage.setOnAction(e -> sendMessageAction(e));
+        btSendMessage.setPrefHeight(78.0);
+        btSendMessage.setPrefWidth(70.0);
+
+        btSendFile.setText("Send \n File");
+        btSendFile.setOnAction(e -> sendFileAction(e));
+        btSendFile.setPrefHeight(78.0);
+        btSendFile.setPrefWidth(50.0);
 
         conversationPane.getChildren().add(labelConversation);
         conversationPane.getChildren().add(textAreaSend);
-        conversationPane.getChildren().add(btSend);
+        conversationPane.getChildren().add(btSendMessage);
+        conversationPane.getChildren().add(btSendFile);
 
         this.setContent(conversationPane);
 
@@ -79,7 +87,7 @@ public class TabConversation extends Tab {
         labelConversation.setText(text);
     }
 
-    private void sendAction(ActionEvent event) {
+    private void sendMessageAction(ActionEvent event) {
         try {
             String usersConcat = "";
             for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
@@ -97,12 +105,27 @@ public class TabConversation extends Tab {
                 String entryTabTitle = usersConcat.replaceAll(entry.getValue().get(0) + ",", "");
                 entryTabTitle = entryTabTitle.replaceAll("," + entry.getValue().get(0), "");
                 MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + textAreaSend.getText(),
-                    entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users);
+                        entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users);
             }
 
             textAreaSend.setText("");
         } catch (Exception ex) {
             Logger.getLogger(UI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void sendFileAction(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Resource File");
+        File file = fileChooser.showOpenDialog(UI.getRoot().getScene().getWindow());
+        for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
+            if (!entry.getKey().equals(clientUsername)) {
+                try {
+                    MainController.client.sendFile(file, entry.getValue().get(1), entry.getValue().get(2));
+                } catch (RemoteException ex) {
+                    Logger.getLogger(TabConversation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
         }
     }
 

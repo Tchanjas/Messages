@@ -10,12 +10,10 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Timer;
@@ -26,10 +24,8 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventType;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Side;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
@@ -266,8 +262,8 @@ public class MainController implements Initializable {
 
                     tabPane.getTabs().add(tab);
                     tabs.put(users.get(0), tab);
-                    users.remove(0);
                     String oldTab = users.get(0);
+                    users.remove(0);
 
                     if (!users.isEmpty()) {
                         while (!users.isEmpty()) {
