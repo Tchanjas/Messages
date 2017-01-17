@@ -51,38 +51,42 @@ public class Client implements ClientInterface {
         try {
             Registry registry = LocateRegistry.getRegistry(IP, port);
             ClientInterface stub = (ClientInterface) registry.lookup("Client");
+            
             PublicKey userPub = (PublicKey) stub.getPublicKey();
-            message = Base64.getEncoder().encodeToString(Crypto.cypher(message.getBytes(), sessionKey));
+            byte[] newMessage = Base64.getEncoder().encode(Crypto.cypher(message.getBytes(), sessionKey));
+            byte[] newUsername = Base64.getEncoder().encode(Crypto.cypher(username.getBytes(), sessionKey));
+            byte[] newUsers = Base64.getEncoder().encode(Crypto.cypher(Serializer.toBytes(users), sessionKey));
             byte[] key = Base64.getEncoder().encode(Crypto.cypher(Serializer.toBytes(sessionKey), userPub));
-            stub.getMessage(message, username, users, key);
+            stub.getMessage(newMessage, newUsername, newUsers, key);
         } catch (Exception ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     @Override
-    public void getMessage(String message, String username, HashMap users, byte[] simetric) throws RemoteException {
+    public void getMessage(byte[] message, byte[] username, byte[] users, byte[] simetric) throws RemoteException {
         Key simKey = (Key) Serializer.toObject(Crypto.decypher(Base64.getDecoder().decode(simetric), keys.getPrivate()));
-        message = new String(Crypto.decypher(Base64.getDecoder().decode(message.getBytes()), simKey));
-        System.out.println(message);
-        if (conversation.get(username) == null) {
+        String newMessage = new String(Crypto.decypher(Base64.getDecoder().decode(message), simKey));
+        String newUsername = new String(Crypto.decypher(Base64.getDecoder().decode(username), simKey));
+        HashMap newUsers = (HashMap) Serializer.toObject(Crypto.decypher(Base64.getDecoder().decode(users), simKey));
+        if (conversation.get(newUsername) == null) {
             Object[] list = new Object[2];
             List<String> listMessages = new ArrayList<String>();
-            listMessages.add(message);
+            listMessages.add(newMessage);
             list[0] = listMessages;
-            list[1] = users;
-            conversation.put(username, list);
+            list[1] = newUsers;
+            conversation.put(newUsername, list);
         } else {
             Object[] list = new Object[2];
-            List<String> listMessages = (List) conversation.get(username)[0];
-            listMessages.add(message);
+            List<String> listMessages = (List) conversation.get(newUsername)[0];
+            listMessages.add(newMessage);
             list[0] = listMessages;
-            HashMap listUsers = (HashMap) conversation.get(username)[1];
-            listUsers.putAll(users);
+            HashMap listUsers = (HashMap) conversation.get(newUsername)[1];
+            listUsers.putAll(newUsers);
             list[1] = listUsers;
 
-            conversation.remove(username);
-            conversation.put(username, list);
+            conversation.remove(newUsername);
+            conversation.put(newUsername, list);
         }
     }
 

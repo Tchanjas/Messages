@@ -108,8 +108,7 @@ public class TabConversation extends Tab {
             for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
                 String entryTabTitle = usersConcat.replaceAll(entry.getValue().get(0) + ",", "");
                 entryTabTitle = entryTabTitle.replaceAll("," + entry.getValue().get(0), "");
-                MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + 
-                        Crypto.cypher(textAreaSend.getText().getBytes(), sessionKey),
+                MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + textAreaSend.getText(),
                         entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users, sessionKey);
             }
 
