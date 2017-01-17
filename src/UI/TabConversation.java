@@ -1,8 +1,10 @@
 package UI;
 
+import Utils.Crypto;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.security.Key;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,6 +35,8 @@ public class TabConversation extends Tab {
     private TextArea textAreaSend = new TextArea();
     private Button btSendMessage = new Button();
     private Button btSendFile = new Button();
+    
+    Key sessionKey = Crypto.generateSessionKey("AES");
 
     public TabConversation(String clientUsername, String clientIP, String clientPort, String username, String IP, int port) throws IOException {
         this.clientUsername = clientUsername;
@@ -104,8 +108,9 @@ public class TabConversation extends Tab {
             for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
                 String entryTabTitle = usersConcat.replaceAll(entry.getValue().get(0) + ",", "");
                 entryTabTitle = entryTabTitle.replaceAll("," + entry.getValue().get(0), "");
-                MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + textAreaSend.getText(),
-                        entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users);
+                MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + 
+                        Crypto.cypher(textAreaSend.getText().getBytes(), sessionKey),
+                        entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users, sessionKey);
             }
 
             textAreaSend.setText("");

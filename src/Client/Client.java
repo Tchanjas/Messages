@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
@@ -30,8 +31,6 @@ public class Client implements ClientInterface {
     static HashMap<String, Object[]> conversation = new HashMap<String, Object[]>();
     KeyPair keys = Crypto.generateKeypair("RSA");
 
-    ;
-
     private Client() {
     }
 
@@ -48,18 +47,24 @@ public class Client implements ClientInterface {
     }
 
     @Override
-    public void sendMessage(String message, String username, String IP, int port, HashMap users) throws RemoteException, AccessException {
+    public void sendMessage(String message, String username, String IP, int port, HashMap users, Key sessionKey) throws RemoteException, AccessException {
         try {
             Registry registry = LocateRegistry.getRegistry(IP, port);
             ClientInterface stub = (ClientInterface) registry.lookup("Client");
-            stub.getMessage(message, username, users);
+            PublicKey userPub = (PublicKey) stub.getPublicKey();
+            message = Base64.getEncoder().encodeToString(Crypto.cypher(message.getBytes(), sessionKey));
+            byte[] key = Base64.getEncoder().encode(Crypto.cypher(Serializer.toBytes(sessionKey), userPub));
+            stub.getMessage(message, username, users, key);
         } catch (Exception ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     @Override
-    public void getMessage(String message, String username, HashMap users) throws RemoteException {
+    public void getMessage(String message, String username, HashMap users, byte[] simetric) throws RemoteException {
+        Key simKey = (Key) Serializer.toObject(Crypto.decypher(Base64.getDecoder().decode(simetric), keys.getPrivate()));
+        message = new String(Crypto.decypher(Base64.getDecoder().decode(message.getBytes()), simKey));
+        System.out.println(message);
         if (conversation.get(username) == null) {
             Object[] list = new Object[2];
             List<String> listMessages = new ArrayList<String>();
@@ -108,7 +113,7 @@ public class Client implements ClientInterface {
             byte[] pubkey = Serializer.toBytes(keys.getPublic());
             String filename = Base64.getEncoder().encodeToString(file.getName().getBytes());
             byte[] simKey = Base64.getEncoder().encode(Crypto.cypher(Serializer.toBytes(simetric), friendKey));
-            
+
             stub.receiveFile(data, signature, pubkey, filename, simKey);
             return true;
         } catch (Exception ex) {
