@@ -31,8 +31,7 @@ public class Client implements ClientInterface {
     static HashMap<String, Object[]> conversation = new HashMap<String, Object[]>();
     KeyPair keys = Crypto.generateKeypair("RSA");
 
-    private Client() {
-    }
+    private Client() {}
 
     public Client(String username, String IP, int port) throws IOException, RemoteException, AlreadyBoundException {
         this.IP = IP;

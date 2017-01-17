@@ -17,9 +17,11 @@ public class UI extends Application {
 
     private static BorderPane root = new BorderPane();
     private static Node previousNode; // so we can go back to the previous node
+    private static Stage stage;
 
     @Override
     public void start(Stage stage) throws Exception {
+        this.stage = stage;
         MenuBar menu = FXMLLoader.load(getClass().getResource("menu.fxml"));
         AnchorPane login = FXMLLoader.load(getClass().getResource("login.fxml"));
 
@@ -56,6 +58,8 @@ public class UI extends Application {
     public static BorderPane getRoot() {
         return root;
     }
+    
+    public static Stage getStage() { return stage; }
 
     public static Node getPreviousNode() {
         return previousNode;

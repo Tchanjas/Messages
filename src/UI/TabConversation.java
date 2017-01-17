@@ -35,7 +35,7 @@ public class TabConversation extends Tab {
     private TextArea textAreaSend = new TextArea();
     private Button btSendMessage = new Button();
     private Button btSendFile = new Button();
-    
+
     Key sessionKey = Crypto.generateSessionKey("AES");
 
     public TabConversation(String clientUsername, String clientIP, String clientPort, String username, String IP, int port) throws IOException {
@@ -108,6 +108,7 @@ public class TabConversation extends Tab {
             for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
                 String entryTabTitle = usersConcat.replaceAll(entry.getValue().get(0) + ",", "");
                 entryTabTitle = entryTabTitle.replaceAll("," + entry.getValue().get(0), "");
+                
                 MainController.client.sendMessage(dateFormat.format(date) + " - " + clientUsername + ":" + textAreaSend.getText(),
                         entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users, sessionKey);
             }
@@ -119,13 +120,34 @@ public class TabConversation extends Tab {
     }
 
     private void sendFileAction(ActionEvent event) {
+        String usersConcat = "";
+        for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
+            if (usersConcat.isEmpty()) {
+                usersConcat = entry.getKey();
+            } else {
+                usersConcat = usersConcat + "," + entry.getKey();
+            }
+        }
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Resource File");
         File file = fileChooser.showOpenDialog(UI.getRoot().getScene().getWindow());
+
+        date = new Date();
+
         for (HashMap.Entry<String, List<String>> entry : users.entrySet()) {
             if (!entry.getKey().equals(clientUsername)) {
                 try {
+                    String entryTabTitle = usersConcat.replaceAll(entry.getValue().get(0) + ",", "");
+                    entryTabTitle = entryTabTitle.replaceAll("," + entry.getValue().get(0), "");
+
+                    MainController.client.sendMessage("File sent from " + clientUsername,
+                            entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users, sessionKey);
+
                     MainController.client.sendFile(file, entry.getValue().get(1), entry.getValue().get(2));
+
+                    MainController.client.sendMessage("File received from " + clientUsername,
+                            entryTabTitle, entry.getValue().get(1), Integer.parseInt(entry.getValue().get(2)), users, sessionKey);
                 } catch (RemoteException ex) {
                     Logger.getLogger(TabConversation.class.getName()).log(Level.SEVERE, null, ex);
                 }
