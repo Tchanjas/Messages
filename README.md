@@ -6,6 +6,6 @@ A messaging program written in Java, using JavaFX and RMI.
 * [x] Responsive and clean interface
 * [x] Registration and authentication
 * [x] Friends List
-* [ ] Secure exchange of messages
+* [x] Secure exchange of messages
 * [x] Group messages
-* [ ] Secure file transfers (encrypted and signed)
+* [x] Secure file transfers (encrypted and signed)
