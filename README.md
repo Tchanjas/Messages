@@ -2,7 +2,7 @@
 
 A secure messaging program written in Java, using JavaFX, RMI, bcrypt, AES and RSA.
 
-![Screenshot](screenshots/login.png "Screenshot")
+![Screenshot](screenshot.png "Screenshot")
 
 ### Features:
 * [x] Responsive and clean interface
