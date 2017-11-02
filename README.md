@@ -1,6 +1,6 @@
 # Messages
 
-A secure messaging program written in Java, using JavaFX, RMI, bcrypt, AES and RSA.
+A secure messaging program written in Java, using JavaFX, RMI, bcrypt, AES, RSA and Apache Derby.
 
 ![Screenshot](screenshot.png "Screenshot")
 
